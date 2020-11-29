@@ -138,6 +138,8 @@ static void * requestToServer(void * args){
       UNIFORM_DISTRIBUTION_UPPER_BOUND
   );
 
+  printf("쓰레드 (id : %d) 시작!\n", threadArgs->threadId);
+
   unsigned int requestIntervalMs = interval * 1000;
   printf("쓰레드 (id : %d)의 요청 간격 : %dms\n", threadArgs->threadId, interval);
 
@@ -224,6 +226,40 @@ static void * requestToServer(void * args){
   return NULL;
 }
 
+char ** getHtmlFilesToRequest(FILE *fp, int * htmlFileCnt){
+
+  char **htmlFileNames = NULL;
+  char htmlFileNameBuf[100];
+
+  while (fgets(htmlFileNameBuf, sizeof(htmlFileNameBuf), fp) != NULL){
+
+    if (*htmlFileCnt == 0){
+      htmlFileNames = (char **)(malloc(sizeof(char *)));
+
+    } else {
+      htmlFileNames = realloc(htmlFileNames, sizeof(char *) * (*htmlFileCnt + 1));
+    }
+
+    htmlFileNames[*htmlFileCnt] = (char *)(malloc(
+        sizeof(char) * (strlen(htmlFileNameBuf) + 1))
+    );
+
+    if (htmlFileNameBuf[strlen(htmlFileNameBuf) - 1] == '\n'){
+      htmlFileNameBuf[strlen(htmlFileNameBuf) - 1] = '\0';
+    }
+
+    strcpy(htmlFileNames[*htmlFileCnt], htmlFileNameBuf);
+    printf("Read filename : %s\n", htmlFileNames[*htmlFileCnt]);
+    (*htmlFileCnt) ++;
+
+    memset(htmlFileNameBuf, '\0', sizeof(htmlFileNameBuf));
+  }
+
+  fclose(fp);
+
+  return htmlFileNames;
+}
+
 // argument [hostname] [port] [file of html file names] [num of threads] [alive] [request cnt of each thread]
 int main(int argc, char *argv[]) {
 
@@ -253,63 +289,41 @@ int main(int argc, char *argv[]) {
   }
 
   long threadPoolSize = strtol(
-      argv[ARG_THREAD_CNT], 
-      NULL, 
+      argv[ARG_THREAD_CNT],
+      NULL,
       10
   );
-  
+
   if (threadPoolSize == STR_TO_LONG_ERR){
     printf(THREAD_NUM_ERR_MSG);
     return 0;
   }
 
   long requestCntPerThread = strtol(
-      argv[ARG_REQUEST_CNT_PER_THREAD], 
-      NULL, 
+      argv[ARG_REQUEST_CNT_PER_THREAD],
+      NULL,
       10
   );
-  
+
   if (requestCntPerThread == STR_TO_LONG_ERR){
     printf(REQUEST_CNT_ERR_MSG);
     return 0;
   }
 
   char * fileName = argv[ARG_FILE_NAME];
-
   FILE * fp = fopen(fileName, "r");
   if (fp == NULL){
     printf("%s 를 열 수 없습니다.\n", fileName);
     return 0;
   }
 
-  char htmlFileNameBuf[100];
-  char **htmlFileNames = NULL;
   int htmlFileCnt = 0;
 
-  while (fgets(htmlFileNameBuf, sizeof(htmlFileNameBuf), fp) != NULL){
-
-    if (htmlFileCnt == 0){
-      htmlFileNames = (char **)(malloc(sizeof(char *)));
-
-    } else {
-      realloc(htmlFileNames, sizeof(char *) * (htmlFileCnt + 1));
-    }
-
-    htmlFileNames[htmlFileCnt] = (char *)(malloc(sizeof(char) * (strlen(htmlFileNameBuf) + 1)));
-
-    if (htmlFileNameBuf[strlen(htmlFileNameBuf) - 1] == '\n'){
-      htmlFileNameBuf[strlen(htmlFileNameBuf) - 1] = '\0';
-    }
-
-    strcpy(htmlFileNames[htmlFileCnt], htmlFileNameBuf);
-    printf("Read filename : %s\n", htmlFileNames[htmlFileCnt]);
-    htmlFileCnt ++;
-
-    memset(htmlFileNameBuf, '\0', sizeof(htmlFileNameBuf));
+  char ** htmlFileNames = getHtmlFilesToRequest(fp, &htmlFileCnt);
+  if (htmlFileNames == NULL){
+    printf("요청할 파일명이 없습니다..\n");
+    return 0;
   }
-
-  fclose(fp);
-
 
   pthread_t newThread[threadPoolSize];
 
@@ -330,7 +344,6 @@ int main(int argc, char *argv[]) {
         requestToServer,
         (void *) args
     );
-
     if (isCreated != 0){
       printf(THREAD_POOL_CREATE_ERR_MSG);
       return -1;
