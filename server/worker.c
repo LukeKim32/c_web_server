@@ -98,8 +98,13 @@ void runBlockingFileIoWorker(ThreadArgs * threadArgs){
       continue;
     }
 
+    printf("debug 1 - file name : %s\n", fileName);
+
     FILE *fp = fopen(fileName, "r");
     if (fp == NULL) {
+
+      printf("file open error 인데??\n");
+
       printf(FILE_OPEN_ERR_MSG);
 
       // Result : clientSockFd - Closed
@@ -112,6 +117,9 @@ void runBlockingFileIoWorker(ThreadArgs * threadArgs){
       );
       continue;
     }
+
+
+    printf("file open error가 아닌데??\n");
 
     // Result : clientSockFd - Closed
     // fp - Closed
@@ -623,9 +631,14 @@ char* verifyRequest(int clientSockFd, int isStateful) {
 
   struct stat fileInfo;
 
+
   int status = checkValid(path, &fileName, &fileInfo);
 
+  printf("after check valid! filename : %s\n", fileName);
+
   if (status != NO_ERROR) {
+    printf("after check valid - status error!!\n");
+
     handleError(
         clientSockFd,
         status,
@@ -636,12 +649,8 @@ char* verifyRequest(int clientSockFd, int isStateful) {
     return NULL;
   }
 
-  char * tmpFileName = (char *)(malloc(
-      sizeof(char)*(strlen(fileName)+1)
-  ));
-  strcpy(tmpFileName, fileName);
 
-  return tmpFileName;
+  return fileName;
 }
 
 // @clientSockFd 는 @isStateful 여부에 따라 닫히지 않도록 설정할 수 있다.

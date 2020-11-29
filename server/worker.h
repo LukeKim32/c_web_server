@@ -36,8 +36,6 @@
 #define MAIN_THREAD_ID 0
 #define NEW_THREAD_ID_START 1
 
-#define BASE_FILE_PATH "/var/tmp/20151529"
-
 typedef struct {
     BlockingMode  fileIoType;
     int serverSockFd;

@@ -74,8 +74,21 @@ int checkValid(char *path, char **fileName, struct stat *fileInfo) {
     return STATUS_BAD_REQUEST_CODE;
   }
 
-  int isFileInfoObtained = stat(*fileName, fileInfo);
+  char * relocatedFileName = (char *)(malloc(
+      sizeof(char)*(strlen(BASE_FILE_PATH) + strlen(*fileName) + 1)
+  ));
+
+  sprintf(
+      relocatedFileName,
+      "%s%s",
+      BASE_FILE_PATH,
+      *fileName
+  );
+  
+  int isFileInfoObtained = stat(relocatedFileName, fileInfo);
+
   if (isFileInfoObtained != FILE_INFO_OBTAINED) {
+    printf("checkValid() : File not found??\n");
     return STATUS_NOT_FOUND_CODE;
   }
 
@@ -85,7 +98,7 @@ int checkValid(char *path, char **fileName, struct stat *fileInfo) {
     return STATUS_BAD_REQUEST_CODE;
   }
 
-//  printf("checkValid() : %s %d\n", *fileName, fileInfo->st_mode);
+  *fileName = relocatedFileName;
 
   return NO_ERROR;
 
