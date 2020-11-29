@@ -84,7 +84,7 @@ int checkValid(char *path, char **fileName, struct stat *fileInfo) {
       BASE_FILE_PATH,
       *fileName
   );
-  
+
   int isFileInfoObtained = stat(relocatedFileName, fileInfo);
 
   if (isFileInfoObtained != FILE_INFO_OBTAINED) {
