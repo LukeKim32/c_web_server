@@ -36,6 +36,8 @@
 #define MAIN_THREAD_ID 0
 #define NEW_THREAD_ID_START 1
 
+#define BASE_FILE_PATH "/var/tmp/20151529"
+
 typedef struct {
     BlockingMode  fileIoType;
     int serverSockFd;
@@ -48,19 +50,35 @@ typedef struct {
     ServerInfo* serverInfo;
 } ThreadArgs;
 
-void readRequestedFile(void * aux, char ** buf, long * size, BlockingMode blockingMode);
 void * initThread(void * args);
 int createThreadPool(long size, RequestQueue *requestQueue, ServerInfo* serverInfo);
 
-int isPeerModel(char *serverModel);
-int isMasterModel(char *serverModel);
-int isSupportedModel(char * modelName);
-int isSupportedFileIoType(char * blockingType);
-
-void handleRequest(int clientSockFd, void *aux, BlockingMode fileIoType, int isStateful);
+// Request Handling
+void readRequestedFile(void * aux, char ** buf, long * size, BlockingMode blockingMode);
 char* verifyRequest(int clientSockFd, int isStateful);
+void handleRequest(int clientSockFd, void *aux, BlockingMode fileIoType, int isStateful);
 
 #define NETWORK_IO 0
 #define FILE_IO 1
 
+// Non-Blocking I/O Epoll Wrapper
+void addNewEpollListen(struct epoll_event *events, int epollFdSet, int newFd);
+int recvReqAndRegisterFileEpoll(int clientSockFd, struct epoll_event *events, int epollFdSet, HashMap * fdHashMap);
+
+// I/O Type
 void markFdIoType(HashMap *map, unsigned long fd, unsigned long ioType);
+int isNetworkIo(HashMap *map, unsigned long fd);
+int isSupportedFileIoType(char * blockingType);
+
+// Thread Runner
+// Master - Worker Model
+void runBlockingFileIoWorker(ThreadArgs * threadArgs);
+void runNonBlockingFileIoWorker(ThreadArgs *threadArgs);
+int isMasterModel(char *serverModel);
+
+// Peer Model
+void runBlockingFileIoPeer(ThreadArgs * threadArgs);
+void runNonBlockingFileIoPeer(ThreadArgs * threadArgs);
+int isPeerModel(char *serverModel);
+
+int isSupportedModel(char * modelName);
