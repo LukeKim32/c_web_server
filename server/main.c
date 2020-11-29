@@ -1,4 +1,5 @@
 #include "main.h"
+#include <sys/resource.h>
 
 RequestQueue requestQueue;
 
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  // Unstable
+  // For Extented Version
 //  char * fileIoBlockType = argv[ARG_FILE_IO_BLOCKING_MODE];
 //  if (!isSupportedFileIoType(fileIoBlockType)){
 //    printf("File I/O argument error!\n");
@@ -79,6 +80,15 @@ int main(int argc, char *argv[]) {
   address.sin_family = IP_V4;
   address.sin_port = htons(port);
   address.sin_addr.s_addr = inet_addr(HOST_IP);
+
+  int optionOn = TRUE;
+  int isOptionSet = setsockopt(
+      serverSockFd,
+      SOL_SOCKET,
+      SO_REUSEADDR,
+      &optionOn,
+      sizeof(optionOn)
+  );
 
 
   int isBinded = bind(
@@ -146,8 +156,11 @@ int main(int argc, char *argv[]) {
   // Start waiting incoming requests  - Blocking
   if (isMasterModel(serverModel)){
 
+    int contiguousErrorCnt = 0;
+
+    initResource();
+
     while (1) {
-      printf("Master - Starting Blocking Accpet\n");
 
       int clientSockFd = accept(
           serverSockFd,
@@ -156,8 +169,13 @@ int main(int argc, char *argv[]) {
       );
 
       if (clientSockFd == INVALID_SOCKET) {
-        printf(ACCEPT_REQUEST_ERROR_MSG);
-        return 0;
+//        printf(ACCEPT_REQUEST_ERROR_MSG);
+        contiguousErrorCnt++;
+        if (contiguousErrorCnt == 10){
+//          printf("[에러]올바르지 않은 요청이 반복되어 프로그램을 종료합니다.\n");
+//          break;
+        }
+        continue;
       }
 
       // Options for efficiently reusing opened socket
@@ -175,10 +193,13 @@ int main(int argc, char *argv[]) {
 
       if (isOptionSet == SOCK_OPT_ERR) {
         // set error
+        printf("소켓 옵션 설정이 되지 않습니다\n");
       }
 
       // push client socket to queue
       enqueue(&requestQueue, clientSockFd);
+
+      contiguousErrorCnt = 0;
     }
 
   } else { // Peer Model
@@ -229,4 +250,12 @@ BlockingMode getBlockingMode(char * fileIoType){
     return BLOCKING;
   }
   return NON_BLOCKING;
+}
+
+void initResource(){
+
+  struct rlimit sysResourceLimit;
+  getrlimit(RLIMIT_NOFILE, &sysResourceLimit);
+  sysResourceLimit.rlim_cur = MAX_FD_LIMIT;
+  setrlimit(RLIMIT_NOFILE, &sysResourceLimit);
 }

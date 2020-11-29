@@ -30,7 +30,7 @@
 #define SUPER_OF_ROOT "/../"
 #define ELSE_SNOOP_PATH "/.."
 
-#define BASE_FILE_PATH "./web_static_files"
+#define BASE_FILE_PATH "./web_static_files/"
 
 
 #define ERROR_PAGE_TEMPLATE "<!DOCTYPE html>"\

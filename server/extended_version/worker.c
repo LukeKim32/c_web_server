@@ -91,7 +91,7 @@ void runBlockingFileIoWorker(ThreadArgs * threadArgs){
     // will not proceed with empty client socket
     int clientSockFd = dequeue(requestQueue, serverInfo->fileIoType);
 
-    printf("워커쓰레드 (id : %lu) 가 요청을 받았음\n", threadId);
+//    printf("워커쓰레드 (id : %lu) 가 요청을 받았음\n", threadId);
 
     char *fileName = verifyRequest(clientSockFd, STATELESS);
     if (fileName == NULL) {
@@ -113,9 +113,6 @@ void runBlockingFileIoWorker(ThreadArgs * threadArgs){
       continue;
     }
 
-
-    printf("file open error가 아닌데??\n");
-
     // Result : clientSockFd - Closed
     // fp - Closed
     handleRequest(
@@ -124,6 +121,9 @@ void runBlockingFileIoWorker(ThreadArgs * threadArgs){
         serverInfo->fileIoType,
         STATELESS
     );
+
+    fclose(fp);
+    sync();
   }
 
   free(threadArgs);
@@ -161,7 +161,7 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
     // 요청한 파일을 Epoll 에 등록하는 작업
     if (clientSockFd != -1) {
 
-      printf("워커쓰레드 (id : %lu) 가 요청을 받았음\n", threadId);
+//      printf("워커쓰레드 (id : %lu) 가 요청을 받았음\n", threadId);
 
       char *fileName = verifyRequest(clientSockFd, STATELESS);
       if (fileName == NULL) {
@@ -210,6 +210,7 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
       HashItem *fileFdToSockFd = pop(fdHashMap, reqFileFd);
       if (fileFdToSockFd == NULL) {
         printf("Hash map pop error! Client is lost!!\n");
+        close(reqFileFd);
         continue;
       }
 
@@ -224,11 +225,14 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
           STATELESS
       );
 
-      printf(
-          "워커쓰레드 (id : %lu) 가 %d-번째 요청을 처리함\n",
-          threadId,
-          respondedCnt++
-      );
+      close(reqFileFd);
+      sync();
+
+//      printf(
+//          "워커쓰레드 (id : %lu) 가 %d-번째 요청을 처리함\n",
+//          threadId,
+//          respondedCnt++
+//      );
 
       free(fileFdToSockFd);
     }
@@ -276,8 +280,8 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
     // If Pending connection setup request exists!
     if (newClientSockFd != -1) {
 
-      printf("새로운 연결 생성! 클라이언트 fd : %d\n", newClientSockFd);
-      fflush(stdout);
+//      printf("새로운 연결 생성! 클라이언트 fd : %d\n", newClientSockFd);
+//      fflush(stdout);
 
       // Add
       addNewEpollListen(
@@ -305,11 +309,11 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
 
       int clientFd = events[i].data.fd; // Network I/O
 
-      printf("<<<<< (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", clientFd, threadId);
-      fflush(stdout);
+//      printf("<<<<< (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", clientFd, threadId);
+//      fflush(stdout);
 
       char *fileName = verifyRequest(clientFd, STATEFUL);
-      fflush(stdout);
+//      fflush(stdout);
       if (fileName == NULL) {
         continue;
       }
@@ -337,10 +341,13 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
           serverInfo->fileIoType,
           STATEFUL
       );
-      fflush(stdout);
 
-      printf(">>>>> (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", clientFd, threadId);
-      fflush(stdout);
+      fclose(fp);
+      sync();
+//      fflush(stdout);
+//
+//      printf(">>>>> (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", clientFd, threadId);
+//      fflush(stdout);
     }
 
   }
@@ -420,8 +427,8 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
 
       if (isNetworkIo(fdToIoTypeMap, eventFd)){
 
-        printf("<<<<< (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", eventFd, threadId);
-        fflush(stdout);
+//        printf("<<<<< (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", eventFd, threadId);
+//        fflush(stdout);
 
         int fileFd = recvReqAndRegisterFileEpoll(
             eventFd,
@@ -444,7 +451,8 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
 
         HashItem *fileFdToSockFd = pop(fdHashMap, fileFd);
         if (fileFdToSockFd == NULL) {
-          printf("Hash map pop error! Client is lost!!\n");
+          printf("Server Internal Error! Client is lost!!\n");
+          close(fileFd);
           continue;
         }
 
@@ -459,14 +467,17 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
             STATEFUL
         );
 
-        fflush(stdout);
+        close(fileFd);
+        sync();
 
-        printf(
-            "워커쓰레드 (id : %lu) 가 %d-번째 요청을 처리함\n",
-            threadId,
-            respondedCnt++
-        );
-        fflush(stdout);
+//        fflush(stdout);
+//
+//        printf(
+//            "워커쓰레드 (id : %lu) 가 %d-번째 요청을 처리함\n",
+//            threadId,
+//            respondedCnt++
+//        );
+//        fflush(stdout);
 
         // close the file I/O fd
         free(fileFdToSockFd);
@@ -514,7 +525,7 @@ void readRequestedFile(void *aux, char **buf, long *size, BlockingMode fileIoTyp
 
     (*buf)[end] = '\0';
 
-    fclose(fp);
+//    fclose(fp);
 
   } else if (fileIoType == NON_BLOCKING) {
 
@@ -543,7 +554,7 @@ void readRequestedFile(void *aux, char **buf, long *size, BlockingMode fileIoTyp
 
     (*buf)[end] = '\0';
 
-    close(reqFileFd);
+//    close(reqFileFd);
   }
 }
 

@@ -95,6 +95,8 @@ int connectServer(char * hostname, int port) {
   int clientSockFd = socket(IP_V4, TCP, IP);
   if (clientSockFd == INVALID_SOCKET) {
     printf(SOCKET_CREATE_ERR_MSG);
+
+    printf("소켓 생성 에러 in connectServer() : errno : %d\n", errno);
     return -1;
   }
 
@@ -104,6 +106,20 @@ int connectServer(char * hostname, int port) {
   serverAddress.sin_port = htons(port);
   serverAddress.sin_addr.s_addr = inet_addr(hostname);
 
+  int optionOn = 1;
+  int isOptionSet = setsockopt(
+      clientSockFd,
+      SOL_SOCKET,
+      SO_REUSEADDR,
+      &optionOn,
+      sizeof(optionOn)
+  );
+
+  if (isOptionSet == -1) {
+    // set error
+    printf("소켓 옵션 설정이 되지 않습니다\n");
+  }
+
   int isConnected = connect(
       clientSockFd,
       (struct sockaddr*)&serverAddress,
@@ -111,7 +127,7 @@ int connectServer(char * hostname, int port) {
   );
 
   if (isConnected == CONNECTION_SETUP_ERR){
-    printf("서버(%s:%lu) 연결 실패! \n", hostname, port);
+//    printf("서버(%s:%lu) 연결 실패! \n", hostname, port);
     return -1;
   }
 
@@ -138,15 +154,21 @@ static void * requestToServer(void * args){
       UNIFORM_DISTRIBUTION_UPPER_BOUND
   );
 
-  printf("쓰레드 (id : %d) 시작!\n", threadArgs->threadId);
+//  printf("쓰레드 (id : %d) 시작!\n", threadArgs->threadId);
 
   unsigned int requestIntervalMs = interval * 1000;
-  printf("쓰레드 (id : %d)의 요청 간격 : %dms\n", threadArgs->threadId, interval);
+//  printf("쓰레드 (id : %d)의 요청 간격 : %dms\n", threadArgs->threadId, interval);
 
 
   int clientSockFd = connectServer(hostname, port);
+  if (clientSockFd == -1){
+    printf("소켓 생성에 실패하였습니다.\n");
+    return NULL;
+  }
 
   char msgBuf[1024 * 100]; // REQUEST RESPONSE BUFFER SIZE is 100kb
+
+  double timeSpent = 0;
 
   for (int i=0; i<requestCntPerThread; i++){
 
@@ -158,6 +180,10 @@ static void * requestToServer(void * args){
     // Create Client Socket
     if (i!=0 && (strcmp(connStatus, STATELESS)==0)){
       clientSockFd = connectServer(hostname, port);
+      if (clientSockFd == -1){
+        printf("소켓 생성에 실패하였습니다.\n");
+        break;
+      }
     }
 
     memset(msgBuf, '\0', sizeof(msgBuf));
@@ -171,11 +197,8 @@ static void * requestToServer(void * args){
         CLIENT_NAME
     );
 
-    printf("클라이언트 쓰레드 (id : %d) 의 %d-번째 요청! %s\n", threadArgs->threadId, i+1, htmlFileName);
-//    printf("클라이언트 쓰레드 (id : %d) 의 요청 : %s\n", threadArgs->threadId, msgBuf);
-    fflush(stdout);
+//    clock_t start = clock();
 
-    // send
     int responseLen = send(
         clientSockFd,
         msgBuf,
@@ -183,38 +206,52 @@ static void * requestToServer(void * args){
         0
     );
 
-    if (responseLen == RESPONSE_SEND_ERR) {
+    memset(msgBuf, '\0', sizeof(msgBuf));
+
+    if (responseLen != RESPONSE_SEND_ERR) {
       // Error
+
+      int responseBufLen = (int) recv(
+          clientSockFd,
+          msgBuf,
+          sizeof(msgBuf),
+          0
+      );
+
+      // Error should not stop the loop
+      if (isHttpRecvErr(msgBuf, responseBufLen)){
+//      printf("[에러]응답 수신간 에러가 발생했습니다.\n");
+//      printf("[안내]Peer model 서버는 stateful 옵션만이 정상 작동합니다.\n");
+//      fflush(stdout);신
+//        return NULL;
+
+      } else {
+        printf("응답 받음! (bytes : %lu)\n", strlen(msgBuf));
+      }
+
+    } else {
       printf("error in request send! errno : %d\n", errno);
     }
 
 
-    memset(msgBuf, '\0', sizeof(msgBuf));
+//    clock_t  end = clock();
+//
+//    timeSpent += (double)(end - start) / CLOCKS_PER_SEC;
 
-    int responseBufLen = (int) recv(
-        clientSockFd,
-        msgBuf,
-        sizeof(msgBuf),
-        0
-    );
-
-    // Error should not stop the loop
-    if (isHttpRecvErr(msgBuf, responseBufLen)){
-      printf("Receiving Response error!\n");
-      fflush(stdout);
-      return NULL;
-    }
-
-    printf("쓰레드(id:%d)의 %d-번째 요청 응답 받음! (bytes : %d)\n", threadArgs->threadId, i+1, strlen(msgBuf));
-    fflush(stdout);
 
     free(htmlFilePath);
+
+    if (strcmp(connStatus, STATELESS)==0){
+//      shutdown(clientSockFd, SHUT_RDWR);
+      close(clientSockFd);
+    }
 
     usleep(requestIntervalMs);
   }
 
-  if (strcmp(connStatus, STATEFUL)==0){
-    shutdown(clientSockFd, SHUT_RDWR);
+  if (strcmp(connStatus, STATELESS)==0){
+//    shutdown(clientSockFd, SHUT_RDWR);
+    close(clientSockFd);
   }
 
   free(threadArgs);

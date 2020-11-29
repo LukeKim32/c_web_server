@@ -20,6 +20,7 @@
 #define BIND_ERROR -1
 #define LISTEN_ERROR -1
 #define SOCK_OPT_ERR -1
+#define MAX_FD_LIMIT 131072
 
 #define MIN_THREAD_NUM 1
 
@@ -55,3 +56,4 @@ void setSocketNonBlocking(int sockFd);
 ServerInfo  * makeServerInfo(char * serverModel, int serverSockFd, BlockingMode fileIoType);
 void printHelpMsg();
 BlockingMode getBlockingMode(char * fileIoType);
+void initResource();

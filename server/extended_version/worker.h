@@ -25,8 +25,8 @@
 #define THREAD_POOL_CREATE_OK_MSG "Thread pool 생성 성공!\n"
 #define FILE_READ_ERR -1
 
-#define EPOLL_TIMEOUT 10
-#define EPOLL_MAX_FD_SIZE 100
+#define EPOLL_TIMEOUT 5
+#define EPOLL_MAX_FD_SIZE 1000
 
 #define SERVER_MODEL_MASTER "master"
 #define SERVER_MODEL_PEER "peer"

@@ -94,7 +94,7 @@ int dequeue(RequestQueue * requestQueue, BlockingMode blockingMode) {
 
   requestQueue->size--;
 
-  printf("큐에 남아있는 리퀘스트 개수 : %d\n", requestQueue->size);
+//  printf("큐에 남아있는 리퀘스트 개수 : %d\n", requestQueue->size);
 
   pthread_cond_signal(&requestQueue->ifFullLock);
   pthread_mutex_unlock(&(requestQueue->lock));

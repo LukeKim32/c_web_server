@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
   if (isMasterModel(serverModel)){
 
     while (1) {
-      printf("Master - Starting Blocking Accpet\n");
+//      printf("Master - Starting Blocking Accpet\n");
 
       int clientSockFd = accept(
           serverSockFd,

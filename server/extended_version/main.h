@@ -55,3 +55,4 @@ void setSocketNonBlocking(int sockFd);
 ServerInfo  * makeServerInfo(char * serverModel, int serverSockFd, BlockingMode fileIoType);
 void printHelpMsg();
 BlockingMode getBlockingMode(char * fileIoType);
+void initResource();

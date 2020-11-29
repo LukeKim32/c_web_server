@@ -20,7 +20,7 @@
 #define STR_TO_LONG_ERR 0L
 #define THREAD_POOL_CREATE_ERR -1
 
-#define FILE_OPEN_ERR_MSG "file could not be opened!"
+#define FILE_OPEN_ERR_MSG "file could not be opened!\n"
 #define THREAD_POOL_CREATE_ERR_MSG "쓰레드 풀 생성 실패\n"
 #define THREAD_POOL_CREATE_OK_MSG "Thread pool 생성 성공!\n"
 #define FILE_READ_ERR -1

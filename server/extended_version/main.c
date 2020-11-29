@@ -50,15 +50,14 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  // Unstable
-//  char * fileIoBlockType = argv[ARG_FILE_IO_BLOCKING_MODE];
-//  if (!isSupportedFileIoType(fileIoBlockType)){
-//    printf("File I/O argument error!\n");
-//    printHelpMsg();
-//    return 0;
-//  }
+  char * fileIoBlockType = argv[ARG_FILE_IO_BLOCKING_MODE];
+  if (!isSupportedFileIoType(fileIoBlockType)){
+    printf("File I/O argument error!\n");
+    printHelpMsg();
+    return 0;
+  }
 
-  BlockingMode fileIoType = getBlockingMode(FILE_IO_BLOCKING);
+  BlockingMode fileIoType = getBlockingMode(fileIoBlockType);
 
   initReqQueue(&requestQueue);
 
@@ -143,11 +142,13 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in clientAddress;
   socklen_t clientAddrSize = sizeof(clientAddress);
 
+  initResource();
+
   // Start waiting incoming requests  - Blocking
   if (isMasterModel(serverModel)){
 
     while (1) {
-      printf("Master - Starting Blocking Accpet\n");
+//      printf("Master - Starting Blocking Accpet\n");
 
       int clientSockFd = accept(
           serverSockFd,
@@ -229,4 +230,13 @@ BlockingMode getBlockingMode(char * fileIoType){
     return BLOCKING;
   }
   return NON_BLOCKING;
+}
+
+
+void initResource(){
+
+  struct rlimit sysResourceLimit;
+  getrlimit(RLIMIT_NOFILE, &sysResourceLimit);
+  sysResourceLimit.rlim_cur = MAX_FD_LIMIT;
+  setrlimit(RLIMIT_NOFILE, &sysResourceLimit);
 }
