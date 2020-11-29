@@ -2,43 +2,9 @@
 
 RequestQueue requestQueue;
 
-void setSocketNonBlocking(int sockFd){
-  int flag = fcntl(sockFd, F_GETFL, 0);
-  fcntl(sockFd, F_SETFL, flag | O_NONBLOCK);
-}
-
-ServerInfo  * makeServerInfo(char * serverModel, int serverSockFd, BlockingMode fileIoType){
-  ServerInfo * serverInfo = (ServerInfo *)(malloc(sizeof(ServerInfo)));
-  serverInfo->serverModel = (char *)(malloc(
-      sizeof(char)*(strlen(serverModel)+1)
-  ));
-  strcpy(serverInfo->serverModel, serverModel);
-  serverInfo->serverSockFd = serverSockFd;
-  serverInfo->fileIoType = fileIoType;
-
-  return serverInfo;
-}
-
-void printHelpMsg(){
-  printf(ARGC_ERR_MSG);
-  printf(COMMAND_INFO_MSG);
-  printf(COMMAND_EXAMPLE_MSG);
-}
-
-BlockingMode getBlockingMode(char * fileIoType){
-  if (strcmp(fileIoType, FILE_IO_BLOCKING) == 0){
-    return BLOCKING;
-  }
-  return NON_BLOCKING;
-}
-
 int main(int argc, char *argv[]) {
 
-  for(int i=0;i<argc;i++){
-    printf("인자 : %s\n", argv[i]);
-  }
-
-  //./server.out 8080 thread_num [master/peer] [file I/O type : blocking/non-blocking]
+  //./server.out 8080 thread_num [master/peer] @unstable - [file I/O type : blocking/non-blocking]
   // peer 모델 같은 경우 accept는 non-blocking (새로 요청 들어온 거 accept와 이미 연결된 커넥션에서 요청 들어오는 epoll간 block을 막기 위해!)
   // master 모델의 경우 accept는 blocking! (어차피 master 쓰레드는 네트워크 I/O 만 하기 때문에)
   //
@@ -50,7 +16,7 @@ int main(int argc, char *argv[]) {
   // peer 모델의 경우, thread_num은 전체 쓰레드의 개수를 나타내는 것으로, 값이 1이라면 하나의 쓰레드로 accept, response를 모두 수행한다.
   // (네트워크 I/O와 클라이언트 요청을 합쳐서 처리하기 때문이다)
 
-  if ((argc != 5)){
+  if ((argc != 4)){
     printHelpMsg();
     return 0;
   }
@@ -84,16 +50,15 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  char * fileIoBlockType = argv[ARG_FILE_IO_BLOCKING_MODE];
-  if (!isSupportedFileIoType(fileIoBlockType)){
-    printf("File I/O argument error!\n");
-    printHelpMsg();
-    return 0;
-  }
+  // Unstable
+//  char * fileIoBlockType = argv[ARG_FILE_IO_BLOCKING_MODE];
+//  if (!isSupportedFileIoType(fileIoBlockType)){
+//    printf("File I/O argument error!\n");
+//    printHelpMsg();
+//    return 0;
+//  }
 
-  BlockingMode fileIoType = getBlockingMode(fileIoBlockType);
-
-  printf("File I/O blocking mode : %s\n", fileIoBlockType);
+  BlockingMode fileIoType = getBlockingMode(FILE_IO_BLOCKING);
 
   initReqQueue(&requestQueue);
 
@@ -233,4 +198,35 @@ int main(int argc, char *argv[]) {
   return 0;
 //    return 0;
 
+}
+
+
+void setSocketNonBlocking(int sockFd){
+  int flag = fcntl(sockFd, F_GETFL, 0);
+  fcntl(sockFd, F_SETFL, flag | O_NONBLOCK);
+}
+
+ServerInfo  * makeServerInfo(char * serverModel, int serverSockFd, BlockingMode fileIoType){
+  ServerInfo * serverInfo = (ServerInfo *)(malloc(sizeof(ServerInfo)));
+  serverInfo->serverModel = (char *)(malloc(
+      sizeof(char)*(strlen(serverModel)+1)
+  ));
+  strcpy(serverInfo->serverModel, serverModel);
+  serverInfo->serverSockFd = serverSockFd;
+  serverInfo->fileIoType = fileIoType;
+
+  return serverInfo;
+}
+
+void printHelpMsg(){
+  printf(ARGC_ERR_MSG);
+  printf(COMMAND_INFO_MSG_VER_DEPLOY);
+  printf(COMMAND_EXAMPLE_MSG_VER_DEPLOY);
+}
+
+BlockingMode getBlockingMode(char * fileIoType){
+  if (strcmp(fileIoType, FILE_IO_BLOCKING) == 0){
+    return BLOCKING;
+  }
+  return NON_BLOCKING;
 }
