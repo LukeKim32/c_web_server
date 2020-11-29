@@ -151,7 +151,7 @@ static void * requestToServer(void * args){
   for (int i=0; i<requestCntPerThread; i++){
 
     // Ask for random html file
-    char * htmlFileName = htmlFileNames[i % htmlFileCnt];//htmlFileNames[rand() % htmlFileCnt];
+    char * htmlFileName = htmlFileNames[rand() % htmlFileCnt];
     char * htmlFilePath = (char *)(malloc(sizeof(char)* (strlen(htmlFileName) + 2)));
     sprintf(htmlFilePath, "/%s", htmlFileName);
 
@@ -205,12 +205,8 @@ static void * requestToServer(void * args){
       return NULL;
     }
 
-//    char tmpBuf[50];
-//    strncpy(tmpBuf, msgBuf, sizeof(tmpBuf)-1);
-    printf("쓰레드(id:%d)의 %d-번째 요청 응답 받음! (bytes : %d) %s\n", threadArgs->threadId, i+1, strlen(msgBuf), msgBuf);
+    printf("쓰레드(id:%d)의 %d-번째 요청 응답 받음! (bytes : %d)\n", threadArgs->threadId, i+1, strlen(msgBuf));
     fflush(stdout);
-//    printf("요청 결과(응답) : %s\n", msgBuf);
-
 
     free(htmlFilePath);
 

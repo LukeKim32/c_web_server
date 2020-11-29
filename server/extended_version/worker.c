@@ -680,12 +680,12 @@ void addNewEpollListen(struct epoll_event *events, int epollFdSet, int newFd) {
 
 
 int recvReqAndRegisterFileEpoll
-    (
-        int clientSockFd,
-        struct epoll_event *events,
-        int epollFdSet,
-        HashMap * fdHashMap
-    ){
+(
+    int clientSockFd,
+    struct epoll_event *events,
+    int epollFdSet,
+    HashMap * fdHashMap
+){
 
   // Error response is handled in the func
   // ** But Still connection has to be kept alive!!

@@ -77,6 +77,7 @@ int checkValid(char *path, char **fileName, struct stat *fileInfo) {
       *fileName
   );
 
+
   int isFileInfoObtained = stat(relocatedFileName, fileInfo);
 
   if (isFileInfoObtained != FILE_INFO_OBTAINED) {
@@ -153,7 +154,6 @@ char *getStatusMsg(int statusCode) {
   }
 }
 
-// response(clientSockFd, 404, "NOT FOUND", NULL, -1);
 void response
 (
     int sockFd,
