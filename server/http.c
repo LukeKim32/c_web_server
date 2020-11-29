@@ -75,7 +75,7 @@ int checkValid(char *path, char **fileName, struct stat *fileInfo) {
   }
 
   char * relocatedFileName = (char *)(malloc(
-      sizeof(char)*(strlen(BASE_FILE_PATH) + strlen(*fileName) + 1)
+      sizeof(char)*(strlen(BASE_FILE_PATH) + strlen(*fileName) + 2)
   ));
 
   sprintf(
@@ -85,10 +85,20 @@ int checkValid(char *path, char **fileName, struct stat *fileInfo) {
       *fileName
   );
 
+
+//  char * relocatedFileName = (char *)(malloc(
+//      sizeof(char)*(strlen(*fileName) + 1)
+//  ));
+//
+//  sprintf(
+//      relocatedFileName,
+//      "%s",
+//      *fileName
+//  );
+
   int isFileInfoObtained = stat(relocatedFileName, fileInfo);
 
   if (isFileInfoObtained != FILE_INFO_OBTAINED) {
-    printf("checkValid() : File not found??\n");
     return STATUS_NOT_FOUND_CODE;
   }
 

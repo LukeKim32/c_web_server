@@ -98,13 +98,8 @@ void runBlockingFileIoWorker(ThreadArgs * threadArgs){
       continue;
     }
 
-    printf("debug 1 - file name : %s\n", fileName);
-
     FILE *fp = fopen(fileName, "r");
     if (fp == NULL) {
-
-      printf("file open error 인데??\n");
-
       printf(FILE_OPEN_ERR_MSG);
 
       // Result : clientSockFd - Closed
@@ -168,7 +163,6 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
 
       printf("워커쓰레드 (id : %lu) 가 요청을 받았음\n", threadId);
 
-
       char *fileName = verifyRequest(clientSockFd, STATELESS);
       if (fileName == NULL) {
         continue;
@@ -189,8 +183,8 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
             epollFdSet,
             reqFileFd
         );
-
         insertHashMap(fdHashMap, reqFileFd, clientSockFd);
+
       }
 
       free(fileName);
@@ -210,13 +204,13 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
     }
 
     for (int i = 0; i < readyIoCnt; i++) {
-
       int reqFileFd = events[i].data.fd;
 
       // get client socket fd from reqFileFd
       HashItem *fileFdToSockFd = pop(fdHashMap, reqFileFd);
       if (fileFdToSockFd == NULL) {
         printf("Hash map pop error! Client is lost!!\n");
+        continue;
       }
 
       long targetClientSockFd = fileFdToSockFd->value;
@@ -631,7 +625,6 @@ char* verifyRequest(int clientSockFd, int isStateful) {
 
   struct stat fileInfo;
 
-
   int status = checkValid(path, &fileName, &fileInfo);
 
   printf("after check valid! filename : %s\n", fileName);
@@ -649,6 +642,7 @@ char* verifyRequest(int clientSockFd, int isStateful) {
     return NULL;
   }
 
+  printf("verify Request() 끝까지 왔다\n");
 
   return fileName;
 }
