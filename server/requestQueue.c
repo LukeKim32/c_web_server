@@ -57,8 +57,6 @@ int dequeue(RequestQueue * requestQueue, BlockingMode blockingMode) {
 
     while(isEmpty(requestQueue)){
 
-//      printf("워커쓰레드 요청 대기 중(Block)!\n");
-
       pthread_cond_wait(
           &requestQueue->ifEmptyLock,
           &requestQueue->lock
@@ -93,8 +91,6 @@ int dequeue(RequestQueue * requestQueue, BlockingMode blockingMode) {
   }
 
   requestQueue->size--;
-
-//  printf("큐에 남아있는 리퀘스트 개수 : %d\n", requestQueue->size);
 
   pthread_cond_signal(&requestQueue->ifFullLock);
   pthread_mutex_unlock(&(requestQueue->lock));

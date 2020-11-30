@@ -1,5 +1,8 @@
-unstable.out : requestQueue.o main_extension.o worker.o http.o hashMap.o
-	gcc -o unstable.out requestQueue.o main_extension.o worker.o http.o hashMap.o -lpthread
+unstable.out : main_extension.o requestQueue.o worker.o http.o hashMap.o
+	gcc -o unstable.out main_extension.o requestQueue.o worker.o http.o hashMap.o -lpthread
+
+main_extension.o : main_extension.c
+	gcc -c -o main_extension.o main_extension.c
 
 requestQueue.o : requestQueue.c
 	gcc -c -o requestQueue.o requestQueue.c -lpthread
@@ -13,8 +16,6 @@ http.o : http.c
 hashMap.o : hashMap.c
 	gcc -c -o hashMap.o hashMap.c
 
-main_extension.o : main_extension.c
-	gcc -c -o main_extension.o main_extension.c
 
 clean :
 	rm *.o *.out

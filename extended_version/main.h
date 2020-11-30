@@ -20,6 +20,7 @@
 #define BIND_ERROR -1
 #define LISTEN_ERROR -1
 #define SOCK_OPT_ERR -1
+#define MAX_FD_LIMIT 131072
 
 #define MIN_THREAD_NUM 1
 

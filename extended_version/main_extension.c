@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
   // peer 모델의 경우, thread_num은 전체 쓰레드의 개수를 나타내는 것으로, 값이 1이라면 하나의 쓰레드로 accept, response를 모두 수행한다.
   // (네트워크 I/O와 클라이언트 요청을 합쳐서 처리하기 때문이다)
 
-  if ((argc != 4)){
+  if ((argc != 5)){
     printHelpMsg();
     return 0;
   }
@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
+  // Unstable
   char * fileIoBlockType = argv[ARG_FILE_IO_BLOCKING_MODE];
   if (!isSupportedFileIoType(fileIoBlockType)){
     printf("File I/O argument error!\n");
@@ -142,13 +143,10 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in clientAddress;
   socklen_t clientAddrSize = sizeof(clientAddress);
 
-  initResource();
-
   // Start waiting incoming requests  - Blocking
   if (isMasterModel(serverModel)){
 
     while (1) {
-//      printf("Master - Starting Blocking Accpet\n");
 
       int clientSockFd = accept(
           serverSockFd,
@@ -220,9 +218,9 @@ ServerInfo  * makeServerInfo(char * serverModel, int serverSockFd, BlockingMode 
 }
 
 void printHelpMsg(){
-  printf(ARGC_ERR_MSG);
-  printf(COMMAND_INFO_MSG_VER_DEPLOY);
-  printf(COMMAND_EXAMPLE_MSG_VER_DEPLOY);
+  printf(ARGC_ERR_MSG_VER_UNSTABLE);
+  printf(COMMAND_INFO_MSG_VER_UNSTABLE);
+  printf(COMMAND_EXAMPLE_MSG_VER_UNSTABLE);
 }
 
 BlockingMode getBlockingMode(char * fileIoType){
@@ -230,13 +228,4 @@ BlockingMode getBlockingMode(char * fileIoType){
     return BLOCKING;
   }
   return NON_BLOCKING;
-}
-
-
-void initResource(){
-
-  struct rlimit sysResourceLimit;
-  getrlimit(RLIMIT_NOFILE, &sysResourceLimit);
-  sysResourceLimit.rlim_cur = MAX_FD_LIMIT;
-  setrlimit(RLIMIT_NOFILE, &sysResourceLimit);
 }

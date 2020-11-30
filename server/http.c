@@ -96,7 +96,14 @@ int checkValid(char *path, char **fileName, struct stat *fileInfo) {
 }
 
 
-char *makeResponseHeader(int statusCode, char *statusMsg, char *contentType, long contentLength, int isStateful) {
+char *makeResponseHeader
+(
+    int statusCode,
+    char *statusMsg,
+    char *contentType,
+    long contentLength,
+    int isStateful
+) {
 
   char *headerBuf = (char *) (malloc(
       sizeof(char) * MAX_HEADER_LEN
@@ -153,7 +160,7 @@ char *getStatusMsg(int statusCode) {
   }
 }
 
-// response(clientSockFd, 404, "NOT FOUND", NULL, -1);
+
 void response
 (
     int sockFd,
@@ -192,7 +199,10 @@ void response
 
   if (responseLen == RESPONSE_SEND_ERR) {
     // Error
-    printf("error in response header send! errno : %d\n", errno);
+    printf(
+        "error in response header send! errno : %d\n",
+        errno
+    );
   }
 
   printf(">>>>> 클라이언트 (%d) 응답 완료\n", sockFd);
@@ -219,6 +229,7 @@ void makeErrorPage(int statusCode, char **body, long *size) {
 
   const char *errMsg = getStatusMsg(statusCode);
   char errInfo[30];
+
   sprintf(errInfo, "%d %s", statusCode, errMsg);
 
   long pageSize = strlen(ERROR_PAGE_TEMPLATE) - 4 + (strlen(errInfo) * 2) + 2;
@@ -237,7 +248,13 @@ void makeErrorPage(int statusCode, char **body, long *size) {
 }
 
 
-void handleError(int clientSockFd, int statusCode, char *contentType, int isStateful) {
+void handleError
+(
+    int clientSockFd,
+    int statusCode,
+    char *contentType,
+    int isStateful
+) {
 
   char *errorPage = NULL;
   long errorPageSize;

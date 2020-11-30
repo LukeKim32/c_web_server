@@ -157,13 +157,7 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
 
     int clientSockFd = dequeue(requestQueue, serverInfo->fileIoType);
 
-    // *** 요청 처리하기 Non-blocking 버젼 :
-    // 새로 들어온 소켓 (연결은 매번 끊기니깐 새로 온 것) 의 요청을 non block 처리하게 등록하기
-    //
-    // 요청한 파일을 Epoll 에 등록하는 작업
     if (clientSockFd != -1) {
-
-//      printf("워커쓰레드 (id : %lu) 가 요청을 받았음\n", threadId);
 
       char *fileName = verifyRequest(clientSockFd, STATELESS);
       if (fileName == NULL) {
@@ -193,12 +187,11 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
     }
 
     // dequeue를 했을 때, 새로 온 요청이 없어도, 기존에 file I/O 등록해놨던 거 처리해줘야한다.
-    // Non blocking
     int readyIoCnt = epoll_wait(
         epollFdSet,
         events,
         EPOLL_MAX_FD_SIZE,
-        EPOLL_TIMEOUT // in milliseconds (As I prefer total response in 30ms, epoll timeout shall be 10ms
+        EPOLL_TIMEOUT
     );
 
     if (readyIoCnt == -1) {
@@ -208,7 +201,6 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
     for (int i = 0; i < readyIoCnt; i++) {
       int reqFileFd = events[i].data.fd;
 
-      // get client socket fd from reqFileFd
       HashItem *fileFdToSockFd = pop(fdHashMap, reqFileFd);
       if (fileFdToSockFd == NULL) {
         printf("Hash map pop error! Client is lost!!\n");
@@ -217,8 +209,6 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
 
       long targetClientSockFd = fileFdToSockFd->value;
 
-      // Result : clientSockFd - Closed
-      // fp - Closed
       handleRequest(
           targetClientSockFd,
           (void *) (&reqFileFd),
@@ -228,12 +218,6 @@ void runNonBlockingFileIoWorker(ThreadArgs *threadArgs){
 
       close(reqFileFd);
       sync();
-
-//      printf(
-//          "워커쓰레드 (id : %lu) 가 %d-번째 요청을 처리함\n",
-//          threadId,
-//          respondedCnt++
-//      );
 
       free(fileFdToSockFd);
     }
@@ -281,10 +265,6 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
     // If Pending connection setup request exists!
     if (newClientSockFd != -1) {
 
-//      printf("새로운 연결 생성! 클라이언트 fd : %d\n", newClientSockFd);
-//      fflush(stdout);
-
-      // Add
       addNewEpollListen(
           events,
           epollFdSet,
@@ -296,10 +276,9 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
         epollFdSet,
         events,
         EPOLL_MAX_FD_SIZE,
-        EPOLL_TIMEOUT // in milliseconds (As I prefer total response in 30ms, epoll timeout shall be 10ms
+        EPOLL_TIMEOUT
     );
 
-    // if error!
     if (readyIoCnt == -1) {
       printf("epoll_wait에서 에러 발생!\n");
 
@@ -310,11 +289,7 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
 
       int clientFd = events[i].data.fd; // Network I/O
 
-//      printf("<<<<< (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", clientFd, threadId);
-//      fflush(stdout);
-
       char *fileName = verifyRequest(clientFd, STATEFUL);
-//      fflush(stdout);
       if (fileName == NULL) {
         continue;
       }
@@ -323,8 +298,6 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
       if (fp == NULL) {
         printf(FILE_OPEN_ERR_MSG);
 
-        // Result : clientSockFd - Alive
-        // fp - Not Opened
         handleError(
             clientFd,
             STATUS_NOT_FOUND_CODE,
@@ -334,8 +307,6 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
         continue;
       }
 
-      // Result : clientSockFd - Alive
-      // fp - Closed
       handleRequest(
           clientFd,
           (void *) fp,
@@ -345,12 +316,7 @@ void runBlockingFileIoPeer(ThreadArgs * threadArgs){
 
       fclose(fp);
       sync();
-//      fflush(stdout);
-//
-//      printf(">>>>> (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", clientFd, threadId);
-//      fflush(stdout);
     }
-
   }
 
   free(threadArgs);
@@ -365,16 +331,18 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
   RequestQueue *requestQueue = threadArgs->requestQueue;
   long threadId = threadArgs->threadId;
   ServerInfo  * serverInfo = threadArgs->serverInfo;
-
   int serverSocketFd = serverInfo->serverSockFd;
 
+
   printf("Non Blocking File I/O Peer 실행!\n");
+
 
   int epollFdSet = epoll_create(EPOLL_MAX_FD_SIZE);
 
   struct epoll_event *events = (struct epoll_event *) (malloc(
       sizeof(struct epoll_event) * EPOLL_MAX_FD_SIZE
   ));
+
 
   HashMap *fdHashMap = createHashMap();
   HashMap * fdToIoTypeMap = createHashMap();
@@ -397,10 +365,8 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
 
     pthread_mutex_unlock(&(requestQueue->lock));
 
-    // If Pending connection setup request exists!
     if (newClientSockFd != -1) {
 
-      // Add
       addNewEpollListen(
           events,
           epollFdSet,
@@ -414,10 +380,9 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
         epollFdSet,
         events,
         EPOLL_MAX_FD_SIZE,
-        EPOLL_TIMEOUT // in milliseconds (As I prefer total response in 30ms, epoll timeout shall be 10ms
+        EPOLL_TIMEOUT
     );
 
-    // if error!
     if (readyIoCnt == -1) {
       printf("epoll_wait에서 에러 발생!\n");
     }
@@ -427,9 +392,6 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
       int eventFd = events[i].data.fd; // Network I/O or File I/O
 
       if (isNetworkIo(fdToIoTypeMap, eventFd)){
-
-//        printf("<<<<< (클라이언트 fd : %d) - 쓰레드 (id : %d)\n", eventFd, threadId);
-//        fflush(stdout);
 
         int fileFd = recvReqAndRegisterFileEpoll(
             eventFd,
@@ -458,8 +420,6 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
 
         long targetClientSockFd = fileFdToSockFd->value;
 
-        // Result : clientSockFd - Alive
-        // fp - Closed
         handleRequest(
             targetClientSockFd,
             (void *) (&fileFd),
@@ -470,26 +430,8 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
         close(fileFd);
         sync();
 
-//        fflush(stdout);
-//
-//        printf(
-//            "워커쓰레드 (id : %lu) 가 %d-번째 요청을 처리함\n",
-//            threadId,
-//            respondedCnt++
-//        );
-//        fflush(stdout);
-
-        // close the file I/O fd
         free(fileFdToSockFd);
-
       }
-
-      // TODO 파일디스크립터에 따라 \ Network I/O, FIle I/O 인지 구분하기
-      // TODO 1) Network I/O 일 경우, 요청 받아서 File I/O 넣어주기
-      //   (network fd - file fd map & fd => isNetwork / isFile)
-      //
-      // TODO 2) File I/O 일 경우, socket fd 찾아서 응답해주기 (file descriptor close)
-      //
     }
   }
 
@@ -499,7 +441,13 @@ void runNonBlockingFileIoPeer(ThreadArgs * threadArgs){
 
 // 파일 디스크립터 닫기 처리
 //
-void readRequestedFile(void *aux, char **buf, long *size, BlockingMode fileIoType) {
+void readRequestedFile
+(
+    void *aux,
+    char **buf,
+    long *size,
+    BlockingMode fileIoType
+) {
 
   if (fileIoType == BLOCKING) {
 
@@ -652,9 +600,16 @@ char* verifyRequest(int clientSockFd, int isStateful) {
 }
 
 // @clientSockFd 는 @isStateful 여부에 따라 닫히지 않도록 설정할 수 있다.
-// @aux는 읽히고 닫힌다.
+// @aux = FILE * or int FD = open()
 //
-void handleRequest(int clientSockFd, void *aux, BlockingMode fileIoType, int isStateful) {
+void handleRequest
+(
+    int clientSockFd,
+    void *aux,
+    BlockingMode
+    fileIoType,
+    int isStateful
+) {
 
   char *requestedFileBuf = NULL;
   long fileSize;
@@ -675,6 +630,7 @@ void handleRequest(int clientSockFd, void *aux, BlockingMode fileIoType, int isS
       isStateful
   );
 }
+
 
 // EPOLL Wrapper
 
